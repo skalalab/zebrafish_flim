@@ -1,6 +1,8 @@
 import pandas as pd
 import seaborn as sns
 import matplotlib.pyplot as plt
+import matplotlib.ticker as ticker
+
 
 sns.set(rc={'figure.figsize':(15,15)})
 sns.set_style(style='white')
@@ -46,6 +48,7 @@ def generate_figure(df,
                     swarmplot_size,
                     axis_line_width,
                     boxplot_line_width,
+                    boxplot_width,
                     dotplot_replicate_alpha,
                     save_fig,
                     save_fig_filename):
@@ -61,6 +64,8 @@ def generate_figure(df,
                     data=curr_df['condition_df'],
                     ax= axs[ix],
                     linewidth=boxplot_line_width,
+                    width=boxplot_width,
+                    showfliers=False,
                     **PROPS_BLACK)
         for (replicate, replicate_df) in curr_df['replicate_df_dict'].items():
             sns.swarmplot(x=x_axis_col_name,
@@ -81,6 +86,7 @@ def generate_figure(df,
             ax.set_xticklabels([str(i) for i in ax.get_xticks()], fontsize=0)
             ax.set_xlabel(condition_list[ix], fontsize=30, weight='bold')
             ax.set_ylabel(y_axis_label, fontsize=30, weight='bold')
+            ax.tick_params(left=True, length=10)
         else:
             sns.despine(left=True, bottom=False, right=True, ax=ax)
             ax.spines['bottom'].set_linewidth(axis_line_width)
