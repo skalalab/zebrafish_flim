@@ -1,5 +1,7 @@
 # zebrafish_flim
 
+# Dependencies
+
 # Installation instructions 
 
 # Hardware
