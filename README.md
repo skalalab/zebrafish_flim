@@ -1,23 +1,42 @@
-## Softwar
+## Software
 * SPCImage 7.4
 * Matlab 2019b
 * CellProfiler 3.1.8
 
+
+<hr>
+### Contents 
+* CellProfiler_macrophage segmenting - 
+* FLIM Python graphing
+* FLIM analysis_Fig2 TNF - 
+* Matlab_ASCtoTIFF
+* Matlab_flim_analysis_macro_redox
+* Matlab_rename_SDT
+* Statistical codes
+* rename_SDT
+
+<hr>
 ### 1. Rename B&H data files to match fish name:
+
+
 Each fish has a folder with a set of files. One of those files is a B&H data file with a very long name (LifetimeData_cycle….). They have the same name in all the folders, so we have to rename them for the name of the fish.
+
 Use “rename_SDT” code in Matlab. To use it, open folder in the left side workspace and set path by right clicking in the white space and select path/current folder. Highlight the top lines of code before it says “new section”, right click and hit “run this section” green arrow up in the tool bar. It will then prompt you to select the folder that contains your raw data files. Select main folder, not subfolders.
-Note: put the code in its own folder, so that when you open the folder which has the code and set path/current folder, it has only one code in it. Otherwise, I think it will confuse matlab and won’t know which code to run from that folder. 
+
+Note: put the code in its own folder, so that when you open the folder which has the code and set path/current folder, it has only one code in it. Otherwise, I think it will confuse matlab and won’t know which code to run from that folder.
 
 ### 2. Fit lifetime images:
 Drag in your B&H data file – M1 and 3 channels
->> Channel 1 – mCherry, Channel 2 – FAD (and GFP), Channel 3 – NADH
+Channel 1 – mCherry, Channel 2 – FAD (and GFP), Channel 3 – NADH
 Instrument response function: Open file for IRFch2, controlA and controlC to copy paste into spcimage – in spcimage go to irf tab and click on paste from clipboard in channel 2, do the same for channel 3
 IRF is measured by taking picture of a urea crystal 
 The IRF takes into account how fast our electronics can measure data and adjusts the recorded data according to that. Fitting is fitting a bi-exponential decay line to the histogram of lifetimes that we gather during data acquisition. And then for FAD we do a three component exponential to account for the NADH bleed through.
 Channel 3 - components: 2
 Channel 2 - components: 3, t3 is fixed and change to 3500 
 We do three components for channel 2 due to the wavelength mixing. There is a possibility of NADH bleedthrough so we set a third component to a value representative of NADH to try to remove that. Otherwise, the 2 components are to fit the short and long lifetimes of the coenzymes
-Set shift:
+
+**Set shift**
+
 Channel 3 - Pick a median value for shift – drag around the cursor in the image to see how the shift value changes. Pick a median number. Lock shift and enter the value. You may have to go to options/model and change shift variation to 10.0 if you see shift value not changing when moving cursor around. Then drag around to see how the chi square value changes. 1 is best, but 0.8-1.5 is okay. Set threshold to 10. Then select Calculate/decay matrix (selected channel).
 The threshold of 10 gets rid of background signal to produce a better fit, but it doesn’t need to be perfect because we get rid of the background manually in cell profiler when we are making masks.
 Do the same in channel 2
@@ -46,33 +65,18 @@ Code: flim_analysis_macro_redox
 you can use options -> Color to specify the range you want to use. Also, we usually change R-G-B to B-G-R, meaning blue will be short lifetimes and red will be long. For some reason the default is the opposite. Just pay attention to whether or not you have done this if you are using the fact that GFP is blue. if it is changed it'll be red instead.
 You can also change which value it is displaying but we usually only use tm which is the default. After it looks good, you go to file -> export and check Color Coded Image with legend. If you don’t like the way their legend looks, you can export one of the color legends and add your own numbers to it (that’s what I usually do). I also usually use the tiff format.
 
-### 2D, unlabeled macrophages:
-1. rename sdt files in R
-2. do fit in SPCImage; batch calculate; batch export
-3. put exports and spcimage files into “analysis” folder (but name of the folder can be anything)
-4. convert asc files to tiff files in R
-5. within analysis folder, create a “Masks” folder to save cell profiler output files
-6. segment cells in Cell Profiler: drag in Ch3_photons tiff files into cell profile, run test mode, and outline nuclei manually in each image
-7. within analysis folder, create a macro excel file to identify images
-8. run image analysis in R
->>>Listeria correction: subtract Listeria+ area 
-1. go to Fiji and open Ch1 (mCherry) image. 
-2. image/adjust/threshold: select default/red/dark background
-3. threshold Listeria+ area and then click apply/convert to mask
-4. this will create a new image, but need to invert the black/white values: go to image/Lookup Tables/invert LUT
-5. save as TIFF; use original file name, but include at the end …photons_mCherry and change Ch1 to Ch3
-6. do threshold for uninfected also even though it will be all black; also need to make threshold image for each corresponding image-somehow otherwise R won’t recognize it
-7. use R code with …newcytoplasm at the end 
 
 <hr>
 ### Image presentation for figures
 In SPCImage, open a fitted SPCImage. 
-Go to Options>Color:
--	Set up range; this is done by looking at what looks good across all the images you want to use; mCherry (ch1) and/or GFP (ch2;FAD) channels will have range of 0-1 so these can’t be modified
--	Always use B-G-R (not the default R-G-B)
-Go to file>export:
--	in matrix: check a1(%), a2(%), t1, t2, chi, pixel intensities
--	in image: check color coded image, intensity image, color legend (separate) and choose TIF for format.
+**Go to Options>Color:**
+* Set up range; this is done by looking at what looks good across all the images you want to use; mCherry (ch1) and/or GFP (ch2;FAD) channels will have range of 0-1 so these can’t be modified
+* Always use B-G-R (not the default R-G-B)
+
+
+**Go to file>export**
+* in matrix: check a1(%), a2(%), t1, t2, chi, pixel intensities
+* in image: check color coded image, intensity image, color legend (separate) and choose TIF for format.
 
 mCherry and GFP intensity images will be grayscale. If you want to add color, open file in Fiji and go to image>look up table and apply color you want
 
