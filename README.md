@@ -5,10 +5,12 @@
 
 
 <hr>
+
 ### Contents 
-* CellProfiler_macrophage segmenting - 
+
+* CellProfiler_macrophage segmenting
 * FLIM Python graphing
-* FLIM analysis_Fig2 TNF - 
+* FLIM analysis_Fig2 TNF
 * Matlab_ASCtoTIFF
 * Matlab_flim_analysis_macro_redox
 * Matlab_rename_SDT
@@ -16,6 +18,7 @@
 * rename_SDT
 
 <hr>
+
 ### 1. Rename B&H data files to match fish name:
 
 
