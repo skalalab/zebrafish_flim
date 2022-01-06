@@ -1,12 +1,4 @@
-## Software
-* SPCImage 7.4
-* Matlab 2019b
-* CellProfiler 3.1.8
-
-
-<hr>
-
-### Contents 
+## Contents 
 
 * CellProfiler_macrophage segmenting
 * FLIM Python graphing
@@ -15,84 +7,98 @@
 * Matlab_flim_analysis_macro_redox
 * Matlab_rename_SDT
 * Statistical codes
-* rename_SDT
+* Source data files
 
 <hr>
 
-### 1. Rename B&H data files to match fish name:
+## Software for FLIM image analysis
+* SPCImage 7.4
+* Matlab 2019b
+* CellProfiler 3.1.8
 
+<hr>
 
-Each fish has a folder with a set of files. One of those files is a B&H data file with a very long name (LifetimeData_cycle….). They have the same name in all the folders, so we have to rename them for the name of the fish.
+## I. Analyzing FLIM images
 
-Use “rename_SDT” code in Matlab. To use it, open folder in the left side workspace and set path by right clicking in the white space and select path/current folder. Highlight the top lines of code before it says “new section”, right click and hit “run this section” green arrow up in the tool bar. It will then prompt you to select the folder that contains your raw data files. Select main folder, not subfolders.
+Steps 1-5 describes the workflow to process and obtain lifetime data per macrophage. During image acquistion we keep track of the number of larvae imaged per condition, number of images collected per larvae, and the number of macrophages per field of view (FOV). This information will be useful during data analysis, presentation, and statistical analysis.
 
-Note: put the code in its own folder, so that when you open the folder which has the code and set path/current folder, it has only one code in it. Otherwise, I think it will confuse matlab and won’t know which code to run from that folder.
+### 1. Rename B&H data files to match folder name in Matlab:
+When acquiring lifetime images, SPCImage generates a folder with a set of files for every image. Each folder is named according to the user's personal preference, for example FOV1, FOV2 etc. One of those files is a .sdt/B&H data file with a very long name (LifetimeData_cycle….). They have the same name in every folder, so we have to rename them to differentiate them. This code will rename each of these .sdt/B&H data file according to the folder name. Use “rename_SDT” code in Matlab. 
 
-### 2. Fit lifetime images:
-Drag in your B&H data file – M1 and 3 channels
-Channel 1 – mCherry, Channel 2 – FAD (and GFP), Channel 3 – NADH
-Instrument response function: Open file for IRFch2, controlA and controlC to copy paste into spcimage – in spcimage go to irf tab and click on paste from clipboard in channel 2, do the same for channel 3
-IRF is measured by taking picture of a urea crystal 
-The IRF takes into account how fast our electronics can measure data and adjusts the recorded data according to that. Fitting is fitting a bi-exponential decay line to the histogram of lifetimes that we gather during data acquisition. And then for FAD we do a three component exponential to account for the NADH bleed through.
-Channel 3 - components: 2
-Channel 2 - components: 3, t3 is fixed and change to 3500 
-We do three components for channel 2 due to the wavelength mixing. There is a possibility of NADH bleedthrough so we set a third component to a value representative of NADH to try to remove that. Otherwise, the 2 components are to fit the short and long lifetimes of the coenzymes
+### 2. Fit lifetime images in SPCImage:
+* Channel 1 – mCherry, Channel 2 – FAD (and GFP), Channel 3 – NADH
+* Apply IRF for Channel 2 and 3.
+* Channel 3 - components: 2
+* Channel 2 - components: 3, t3 is fixed and change to 3500. We do three components for channel 2 due to the wavelength mixing. There is a possibility of NADH bleedthrough so we set a third component to a value representative of NADH to remove that. Otherwise, the 2 components are to fit the short and long lifetimes of the coenzymes.
+* Set shift so that the chi square value 1. 1 is best, but 0.8-1.5 is okay. 
+* Set threshold to 10. Select Calculate>Decay matrix (selected channel). Do this in Channel 2 and 3.
+* Channel 1 - just go to calculate decay matrix; mCherry does not need to be fit.
+* Save file to save settings.
+* Perform batch processing – go to Calculate>Batch processing (all channels). Some computers will crash if you select too many files at a time; I do in batches of 20-25 files. Select all the B&H files you want to batch calculate. Fitting will generate .img/SPCImage document files.
+* To export fitted files – go to File>Export, select t1, t2, a1%, a2%, chi2, pixel intensities, batch export, and all channels. These will be .asc files.
 
-**Set shift**
+### 3. Convert ASC files to TIFF in Matlab:
+The exported files from SPCImage will be .asc files. They have to be converted to .tiff before they can used in CellProfiler and Matlab in downstream steps. Use "ASCtoTIFF" code in Matlab. Put all asc files to be converted into a folder; the Matlab code will ask for this folder. All tiff files will be deposited into the same folder. After the tiff files were generated, the asc files can be deleted; this is optional.
 
-Channel 3 - Pick a median value for shift – drag around the cursor in the image to see how the shift value changes. Pick a median number. Lock shift and enter the value. You may have to go to options/model and change shift variation to 10.0 if you see shift value not changing when moving cursor around. Then drag around to see how the chi square value changes. 1 is best, but 0.8-1.5 is okay. Set threshold to 10. Then select Calculate/decay matrix (selected channel).
-The threshold of 10 gets rid of background signal to produce a better fit, but it doesn’t need to be perfect because we get rid of the background manually in cell profiler when we are making masks.
-Do the same in channel 2
-Channel 1 - just go to calculate decay matrix 
-Save file to save settings – keep fish name and just add “settings”
-To do batch processing – go to calculate/batch processing (all channels). Some computers will crash if you select too many files at a time; I do in batches of 20-25 files. Select all the B&H files you want to batch calculate.
-To export – go to file/export, select t1, t2, a1%, a2%, chi2, pixel intensities, batch export, and all channels
+### 4. Segmenting cells in CellProfiler:
+This step will trace macrophages in each image/FOV based on mCherry signal, and will generate a mask that will be used in Step 5 to calculate the lifetimes in macrophage area only.
+Use code from "CellProfiler_macrophage segmenting" folder. Use this code for all the data, except the data in Figure 2. For Figure 2, use CellProfiler pipeline from "FLIM analysis_Fig2 TNF" folder; this pipeline will create a mask in the mCherry and GFP channels, which will be used in Matlab to designate each macrophage as GFP negative or positive.
 
-### 3. Convert ASC files to TIFF in Matlab using ASCtoTIFF code:
-Right click in white space on the left panel – choose add path/current folder – select folder with Matlab command (ASCtoTIFF) and then hit run. This will ask you to select the folder with your images. Answer NO to higher level directory. Pause button will turn back to green when it’s done.
-
-### 4. Segmenting cells in CellProfiler – trace mCherry macrophages to create masks to calculate lifetimes in macrophages only
-After export, you can delete asc files. 
-Search in file by “photons.tiff”, click on one and control A to select all, and drag into drop box of cell profiler
-Go to namesandtypes and hit update and then file/save project
-Start test mode, keep hitting “Step”. This will let you go through each image set one by one and check masking for each image. Cross-check images in SPCImage. Check lifetime of mCherry signal in each cell; lifetime of mCherry will be different if a cell is dead or if it is a non-specific signal. You can delete these spots in Fiji so they are not used by Matlab to calculate lifetimes.
-Do 5 files at a time so you can track images/macrophages in SPCImage (use SPCImage file for tracking, that one generated from fitting data)
+* Go to the folder where all the tiff files are located and select files ending in "...photons.tiff" for every channel (Ch1/mCherry, Ch2/FAD or GFP, Ch3/NADH) for every image set. Drag these files into CellProfiler in the "Images" step. Drag in 5 image sets (15 files) at a time.
+* Go to "namesandtypes" step and hit update and then file>save project.
+* Go to "SaveImages" step to designate where the files will be saved; this should be the same folder where all the other tiff files are located.
+* Start test mode, keep hitting “Step”. This will let you go through each image set one by one and check masking for each image. Sometimes the threshold level needs to be modified; go to "Threshold" step and adjust value in "Manual threshold".  
+* Cross-check images in SPCImage. Check lifetime of mCherry signal of every macrophage; lifetime of mCherry will be different if a cell is dead or if it is a non-specific signal. You can delete these spots in Fiji so they are not used by Matlab to calculate lifetimes. 
+* CellProfiler will generate a file ending in "...photonsallmacro.tiff" for Ch1 only.
 
 ### 5. Calculate lifetimes in Matlab
-Doing calculations of lifetimes using masks generated in CellProfiler
-Code: flim_analysis_macro_redox
+This step will perform calculations of lifetimes using masks generated in CellProfiler. Use code "flim_analysis_macro_redox" in Matlab. Use this code for all the data, except the data in Figure 2. For Figure 2, use Matlab code from "FLIM analysis_Fig2 TNF" folder.
 
-#### To export lifetime images: 
+* The user will have to type in the directory of where all the files are located, for example: filefront = 'C:\Users\Veronika\Desktop\Veronika 102021 stat6\export\fish-'; pay attention to direction of slash signs. "fish-" is just the beginning of all tiff files, but this depends on how the user named the images during acquistion. If the user named each image FOV1, FOV2 etc, then the user will have to input ...export\FOV-'
+
+* The user will have to manually type in the image numbers corresponding with each larva, for example if larva 1 correspond with images 1-12, type in im_num = [1:12];
+
+* The same directory will have to be copy/pasted at the bottom under "save..." and "load...". In addition, the user will also have to define in "save.." and "load..." the name of the file Matlab will generate that will contain all the values per larva. For example, "save('C:\Users\Veronika\Desktop\Veronika 102021 stat6\export\Stat6_larva 1.mat...", same for "load...". Usually our naming scheme includes the condition and larva number.
+
+* This input will generate a Matlab file that contains all the data from images 1-12 for larva 1. To calculate lifetimes for larva 2, change the image range in "im_num = [xx:xx];" and change the name to ...larva 2.mat in "save..." and "load...", and so on for all the larvae. 
+
+* After all the Matlab files were generated for each larvae, the user can open the Matlab file in Matlab and copy/paste the values into an Excel. However, this is time-consuming and tedious; this step can be automated by writingg a code in R to generate an Excel file containing the values from all the Matlab files. 
 
 <hr>
-you can use options -> Color to specify the range you want to use. Also, we usually change R-G-B to B-G-R, meaning blue will be short lifetimes and red will be long. For some reason the default is the opposite. Just pay attention to whether or not you have done this if you are using the fact that GFP is blue. if it is changed it'll be red instead.
-You can also change which value it is displaying but we usually only use tm which is the default. After it looks good, you go to file -> export and check Color Coded Image with legend. If you don’t like the way their legend looks, you can export one of the color legends and add your own numbers to it (that’s what I usually do). I also usually use the tiff format.
 
+## II. Preparing images for presentation
 
-<hr>
-### Image presentation for figures
-In SPCImage, open a fitted SPCImage. 
-**Go to Options>Color:**
+### 1. Exporting lifetime images from SPCImage:
+
+* In SPCImage, open a fitted SPCImage file (.img). 
+
+**Go to Options>Color**
 * Set up range; this is done by looking at what looks good across all the images you want to use; mCherry (ch1) and/or GFP (ch2;FAD) channels will have range of 0-1 so these can’t be modified
 * Always use B-G-R (not the default R-G-B)
-
 
 **Go to file>export**
 * in matrix: check a1(%), a2(%), t1, t2, chi, pixel intensities
 * in image: check color coded image, intensity image, color legend (separate) and choose TIF for format.
+* perform batch export, and export all channels
 
-mCherry and GFP intensity images will be grayscale. If you want to add color, open file in Fiji and go to image>look up table and apply color you want
 
-to add scale bar, use the information from Prairie View software display window when you image. In the image resolution section, the software provides image size, FOV and pixel size. Pixel size will be automatically adjusted if you apply optical zoom during imaging, so just use the values directly to set up scale bar in Fiji. In Fiji, go to Analyze>Set scale and enter the numbers. Then go to Analyze>Tools>Scale bar to apply scale to the image 
+### 2. Generating redox ratio images:
+* After exporting pixel intensities etc as above, it will generate asc files. They need to be converted to TIFF in Matlab using ASCtoTIFF code.
+* There should be a file ending in “photons”. Use this file for Ch2 (FAD) and Ch3 (NADH) to open in FIJI. 
+* Ch3 may have to be thresholded so everything outside the tail image is set to zero. This is so when you perform image calculations, the area outside the tail remains zero and doesn’t generate signal during calculations. To threshold, go to Image>Adjust>Threshold. The tail area should be covered in red, and outside should stay black or unselected. Hit apply and select set to NaN. The end should be that only the tail area should have signal value, and everywhere where there is no tail, the signal value should be NaN.
+* Then go to Process>Image calculator
+* The equation for redox ratio is NADH/NADH+FAD, which is Ch3/Ch3+Ch2. Select Ch3 ADD Ch2. This will give a new “results…” file where Ch2 and Ch3 were added. Use this now to DIVIDE Ch3.
+* Perform this for all the images you want to place in a figure. Once you have all your redox ratio images, look at the min and max for all the images using Image>Adjust>B&C. Once you compared all the images, set the min and max the same for all the images. Go to Image>Adjust>B&C and the window should have a set button. Click on the set button to manually enter min and max. 
+* After this you can apply Fire color to all the images from the look up table. Go to Image>Lookup Tables>Fire. You can also do this from the menu bar by clicking on LUT. 
+* Now you need to generate a color legend. Go to Analyze>Tools>Calibration bar. This will generate a color legend but within the image. I was told that you should be able to generate and export the color legend separately, so that it is not part of the image, but I was not able to figure that out. So what I do is generate a copy of the image with the color legend and just crop it in Illustrator. 
+* After the redox ratio images were adjusted for min/max and applied the Fire color, they should be set to RGB color; right now they are 32-bit. They will not display in Illustrator as a 32-bit TIF. Go to Image>Type>RGB Color. Save all images as TIF.
 
-generating redox ratio images
-1.	after exporting pixel intensities etc as above, it will generate an asc file. This needs to be converted to TIF in Matlab using ASCtoTIFF code.
-2.	There should be a file ending in “photons”. Use this file for Ch2 (FAD) and Ch3 (NADH) to open in FIJI. 
-3.	Ch3 may have to be thresholded so everything outside the tail image is set to zero. This is so when you perform image calculations, the area outside the tail remains zero and doesn’t generate signal during calculations. To threshold, go to Image>Adjust>Threshold. The tail area should be covered in red, and outside should stay black or unselected. Hit apply and select set to NaN. Sometimes it acts funny and the tail gets blacked out. So then you need to play around. The end should be that only the tail area should have signal value, and everywhere where there is no tail, the signal value should be NaN.
-4.	Then go to Process>image calculator
-5.	The equation for redox ratio is NADH/NADH+FAD, which is Ch3/Ch3+Ch2. Select Ch3 ADD Ch2. This will give a new “results…” file where Ch2 and Ch3 were added. Use this now to DIVIDE Ch3.
-6.	Perform this for all the images you want to place in a figure. Once you have all your redox ratio images, look at the min and max for all the images using Image>Adjust>B&C. Once you compared all the images, set the min and max the same for all the images. Just go to Image>Adjust>B&C and the window should have a set button. Click on the set button to manually enter min and max. 
-7.	After this you can apply Fire color to all the images from the look up table. Go to image>Lookup Tables>Fire. You can also do this from the menu bar by clicking on LUT. 
-8.	Now you need to generate a color legend. Go to Analyze>Tools>Calibration bar. This will generate a color legend but within the image. I was told that you should be able to generate and export the color legend separately, so that it is not part of the image, but I was not able to figure that out. So what I do is generate a copy of the image with the color legend and just crop it in Illustrator. 
-9.	Also, very important, the redox ratio images after they were adjusted for min and max and applied the Fire color, they should be set to RGB color; right now they are 32-bit. They will not display in Illustrator as a 32-bit TIF. Go to Image>Type>RGB Color
+<hr>
 
+## III. Graphing lifetime data
+To display FLIM data as a composite dot plot and Tukey-adjusted box plot, go to "FLIM Phyton Graphing" folder. Open codes in Jupyter Notebook (Anaconda.navigator). The Excel files containing data values should be in the same folder. Excel files are provided in "Source data files" folder.
+
+<hr>
+
+## IV. Statistics
+All FLIM data was analyzed in R; codes provided in "R codes_zebrafish FLIM data" folder in the "Statistical codes" folder. The rest of the data was analyzed in SAS.
