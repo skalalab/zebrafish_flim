@@ -1,3 +1,6 @@
+[![DOI](https://zenodo.org/badge/404763391.svg)](https://zenodo.org/badge/latestdoi/404763391)
+
+
 ## Contents 
 
 * CellProfiler_macrophage segmenting
